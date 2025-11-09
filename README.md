@@ -149,3 +149,89 @@ Environment variable
 Step 4: Test App
 
 Open URL: https://my-dotnet-app.onrender.com
+
+
+
+
+
+
+
+# ⚙️ Windows-based GitHub Actions Workflow for Render Deployment
+
+## Step 1: Create file in proj root => .github/workflows/deploy.yml
+
+## 🧾 Step 2: Add the following workflow content
+⬇️
+
+name: Deploy .NET App to Render (Windows)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+
+    steps:
+    # 1️⃣ Checkout code
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # 2️⃣ Setup .NET SDK
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    # 3️⃣ Restore dependencies
+    - name: Restore dependencies
+      run: dotnet restore
+
+    # 4️⃣ Build project
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    # 5️⃣ Run tests (optional)
+    - name: Run tests
+      run: dotnet test --no-build --verbosity normal
+
+    # 6️⃣ Publish build output
+    - name: Publish
+      run: dotnet publish -c Release -o ./publish
+
+    # 7️⃣ Trigger Render Deployment
+    - name: Trigger Render Deployment
+      env:
+        RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+        RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      run: |
+        curl -X POST "https://api.render.com/v1/services/$env:RENDER_SERVICE_ID/deploys" `
+        -H "Authorization: Bearer $env:RENDER_API_KEY" `
+        -H "Accept: application/json" `
+        -H "Content-Type: application/json"
+
+
+  ##  🔑 Step 3: Set Up GitHub Secrets
+
+    Go to your repository → Settings → Secrets and variables → Actions → New repository secret
+
+Add these:
+
+Secret Name	Description
+
+RENDER_API_KEY	From your Render dashboard → Account Settings → API Keys
+RENDER_SERVICE_ID	From Render → Open your service → Copy from service URL (or via API list)
+
+
+
+## ⚙️ Step 4: How It Works
+
+Every push to main runs the workflow.
+
+The .NET project is built and tested on GitHub servers.
+
+After successful build, a new deployment is triggered on Render using the Render API.
+
+Render will pull from GitHub and deploy automatically (same as a manual trigger)
